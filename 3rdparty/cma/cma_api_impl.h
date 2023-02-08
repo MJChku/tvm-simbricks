@@ -103,12 +103,12 @@ void* cma_alloc_cached(size_t size) { return cma_alloc(size, CMA_ALLOC_CACHED); 
 void* cma_alloc_noncached(size_t size) { return cma_alloc(size, CMA_ALLOC_NONCACHED); }
 
 int cma_free(void* mem) {
-  __DEBUG("Releasing contigous memory from 0x%x\n", (unsigned)mem);
-  unsigned data, v_addr;
+  __DEBUG("Releasing contigous memory from 0x%x\n", (uintptr_t)mem);
+  uintptr_t data, v_addr;
 
   /* save user space pointer value */
-  data = (unsigned)mem;
-  v_addr = (unsigned)mem;
+  data = (uintptr_t)mem;
+  v_addr = (uintptr_t)mem;
 
   if (ioctl(cma_fd, CMA_GET_SIZE, &data) == -1) {
     __DEBUG("cma_free - ioctl command unsuccsessful - 0\n");
@@ -128,12 +128,12 @@ int cma_free(void* mem) {
   return 0;
 }
 
-unsigned cma_get_phy_addr(void* mem) {
-  unsigned data;
-  __DEBUG("Getting physical address from 0x%x\n", (unsigned)mem);
+uintptr_t cma_get_phy_addr(void* mem) {
+  uintptr_t data;
+  __DEBUG("Getting physical address from 0x%x\n", (uintptr_t)mem);
 
   /* save user space pointer value */
-  data = (unsigned)mem;
+  data = (uintptr_t)mem;
 
   /* get physical address */
   if (ioctl(cma_fd, CMA_GET_PHY_ADDR, &data) == -1) {
