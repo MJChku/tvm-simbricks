@@ -45,6 +45,10 @@ def get_bitstream_path():
 
     # Derive destination path
     cache_dir = os.getenv("VTA_CACHE_PATH", os.path.join(os.getenv("HOME"), ".vta_cache/"))
+
+    if env.TARGET == 'simbricks-pci':
+        return os.path.join(cache_dir, env.TARGET) + '-dummy.bit'
+
     cache_dir = os.path.join(cache_dir, env.TARGET)
     cache_dir = os.path.join(cache_dir, env.HW_VER.replace(".", "_"))
     # Create the directory if it didn't exist
