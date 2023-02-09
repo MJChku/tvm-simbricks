@@ -26,7 +26,8 @@ def main():
     parser.add_argument("bitstream", type=str, default="", help="bitstream path")
     args = parser.parse_args()
 
-    if args.target not in ("pynq", "ultra96", "de10nano", "sim", "tsim"):
+    if args.target not in ("pynq", "ultra96", "de10nano", "sim", "tsim",
+                            "simbricks-pci"):
         raise RuntimeError("Unknown target {}".format(args.target))
 
     curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
@@ -72,7 +73,7 @@ def bitstream_program(target, bitstream, *args):
         pynq_bitstream_program(bitstream)
     elif target in ["de10nano"]:
         de10nano_bitstream_program(bitstream)
-    elif target in ["sim", "tsim"]:
+    elif target in ["sim", "tsim", "simbricks-pci"]:
         # In simulation, bit stream programming is a no-op
         return
     elif target in ["intelfocl"]:
