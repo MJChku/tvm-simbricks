@@ -55,7 +55,7 @@
 #define CMA_IOCTL_MAXNR 5
 
 #ifndef CMA_DEBUG
-#define CMA_DEBUG 0
+#define CMA_DEBUG 1
 #endif
 #ifndef DRIVER_NODE_NAME
 #define DRIVER_NODE_NAME "cma"
