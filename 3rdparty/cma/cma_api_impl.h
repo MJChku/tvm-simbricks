@@ -73,7 +73,7 @@
 void* cma_alloc(size_t size, unsigned ioctl_cmd);
 
 /* Global file descriptor */
-int cma_fd = 0;
+int cma_fd = -1;
 
 int cma_init(void) {
   __DEBUG("Opening \"/dev/" DRIVER_NODE_NAME "\" file\n");
