@@ -744,8 +744,187 @@ class InsnQueue : public BaseQueue<VTAGenericInsn> {
 
     return "unknown op";
   }
+  
+
+  int dumpto(std::string filename) {
+    FILE *input_file = fopen("/tmp/petri_sim.insns", "rb");
+    std::string prifix = "/tmp/vta_trace/";
+    FILE *output_file = fopen((prifix+filename).c_str(), "wb");
+    char buffer[1024];
+    size_t bytes_read;
+
+    if (input_file == NULL || output_file == NULL) {
+        perror("Failed to open file");
+        return 1;
+    }
+
+    while ((bytes_read = fread(buffer, 1, sizeof(buffer), input_file)) > 0) {
+        fwrite(buffer, 1, bytes_read, output_file);
+    }
+
+    fclose(input_file);
+    fclose(output_file);
+
+    return 0;
+}
   // Dump instructions in the queue
   void DumpInsn() {
+    // Keep tabs on dependence queues
+    // Converter
+    union VTAInsn c;
+    // Iterate over all instructions
+    int insn_count = count();
+    const VTAGenericInsn* insn = data();
+    // printf("from collections import deque\n");
+    // printf("from place_transition import Token\n");
+    // printf("def collect_insns():\n");
+    // printf("  _ = deque()\n");
+    // printf("There are %u instructions\n", insn_count);
+    FILE *fptr;
+    fptr = fopen("/tmp/petri_sim.insns","w");
+    for (int i = 0; i < insn_count; ++i) {
+      char opcode[10] = "empty";
+      char subopcode[10] = "empty";
+      char tstype[10] = "empty";
+      int xsize = 0;
+      int ysize = 0;
+      int uop_begin = 0;
+      int uop_end = 0;
+      int lp_1 = 0;
+      int lp_0 = 0;
+      int pop_prev = 0;
+      int pop_next = 0;
+      int push_prev = 0;
+      int push_next = 0;
+      int use_alu_imm = 0;
+
+      // Fetch instruction and decode opcode
+      c.generic = insn[i];
+      // printf("INSTRUCTION %u: ", i);
+      if (c.mem.opcode == VTA_OPCODE_LOAD || c.mem.opcode == VTA_OPCODE_STORE) {
+        if (c.mem.x_size == 0) {
+          if (c.mem.opcode == VTA_OPCODE_STORE) {
+            // printf("NOP-STORE-STAGE\n");
+            strcpy(opcode, "store");
+            strcpy(subopcode, "sync");
+          } else if (GetMemPipelineStage(c.mem.memory_type) == kComputeStage) {
+            // printf("NOP-COMPUTE-STAGE\n");
+            strcpy(opcode, "compute");
+            strcpy(subopcode, "sync");
+          } else {
+            strcpy(opcode, "load");
+            strcpy(subopcode, "sync");
+            // printf("NOP-MEMORY-STAGE\n");
+          }
+          pop_prev =  static_cast<int>(c.mem.pop_prev_dep);
+          pop_next =  static_cast<int>(c.mem.pop_next_dep);
+          push_prev =  static_cast<int>(c.mem.push_prev_dep);
+          push_next =  static_cast<int>(c.mem.push_next_dep);
+          // printf("\tdep - pop prev: %d, pop next: %d, push prev: %d, push next: %d\n",
+          //        static_cast<int>(c.mem.pop_prev_dep), static_cast<int>(c.mem.pop_next_dep),
+          //        static_cast<int>(c.mem.push_prev_dep), static_cast<int>(c.mem.push_next_dep));
+          // Count status in queues
+          fprintf(fptr,"insn, %s, %s, %s, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n", \
+                  opcode, subopcode, tstype, xsize, ysize, uop_begin, uop_end, lp_1, lp_0, use_alu_imm, pop_prev, pop_next, push_prev, push_next);
+          // printf("  _.append(Token(dict({\"opcode\": \"%s\" , \"subopcode\": \"%s\", \"tstype\": \"%s\", \"xsize\": %d, \"ysize\":%d, \
+          //         \"uop_begin\":%d, \"uop_end\":%d, \"lp_1\":%d, \"lp_0\":%d,\
+          //         \"use_alu_imm\": %d,\
+          //         \"pop_prev\":%d, \"pop_next\":%d, \"push_prev\":%d, \"push_next\":%d})))\n", \
+          //         opcode, subopcode, tstype, xsize, ysize, uop_begin, uop_end, lp_1, lp_0, use_alu_imm, pop_prev, pop_next, push_prev, push_next);
+          continue;
+        }
+        // Print instruction field information
+        if (c.mem.opcode == VTA_OPCODE_LOAD) {
+          // printf("LOAD ");
+          if (c.mem.memory_type == VTA_MEM_ID_UOP) {
+            strcpy(opcode, "compute");
+            strcpy(subopcode, "loadUop");
+          }
+          if (c.mem.memory_type == VTA_MEM_ID_WGT){
+            strcpy(opcode, "load");
+            strcpy(subopcode, "load");
+            strcpy(tstype, "wgt");
+          }
+          if (c.mem.memory_type == VTA_MEM_ID_INP){
+            strcpy(opcode, "load");
+            strcpy(subopcode, "load");
+            strcpy(tstype, "inp");
+          }
+          if (c.mem.memory_type == VTA_MEM_ID_ACC) {
+            strcpy(opcode, "compute");
+            strcpy(subopcode, "loadAcc");
+          }
+        }
+        if (c.mem.opcode == VTA_OPCODE_STORE) {
+          strcpy(opcode, "store");
+          strcpy(subopcode, "store");
+        }
+
+        pop_prev =  static_cast<int>(c.mem.pop_prev_dep);
+        pop_next =  static_cast<int>(c.mem.pop_next_dep);
+        push_prev =  static_cast<int>(c.mem.push_prev_dep);
+        push_next =  static_cast<int>(c.mem.push_next_dep);
+        xsize =  static_cast<int>(c.mem.x_size);
+        ysize =  static_cast<int>(c.mem.y_size);
+
+        // c.mem.x_pad_0 = 0;
+        // c.mem.x_pad_1 = 0;
+        // c.mem.y_pad_0 = 0;
+        // c.mem.y_pad_1 = 0;
+
+      } else if (c.mem.opcode == VTA_OPCODE_GEMM) {
+        // Print instruction field information
+        strcpy(opcode, "compute");
+        strcpy(subopcode, "gemm");
+        pop_prev =  static_cast<int>(c.mem.pop_prev_dep);
+        pop_next =  static_cast<int>(c.mem.pop_next_dep);
+        push_prev =  static_cast<int>(c.mem.push_prev_dep);
+        push_next =  static_cast<int>(c.mem.push_next_dep);
+        xsize =  static_cast<int>(c.mem.x_size);
+        ysize =  static_cast<int>(c.mem.y_size);
+        uop_begin = static_cast<int>(c.gemm.uop_bgn);
+        uop_end = static_cast<int>(c.gemm.uop_end);
+        lp_1 = static_cast<int>(c.gemm.iter_out);
+        lp_0 = static_cast<int>(c.gemm.iter_in);
+
+      } else if (c.mem.opcode == VTA_OPCODE_ALU) {
+
+        strcpy(opcode, "compute");
+        strcpy(subopcode, "alu");
+        pop_prev =  static_cast<int>(c.mem.pop_prev_dep);
+        pop_next =  static_cast<int>(c.mem.pop_next_dep);
+        push_prev =  static_cast<int>(c.mem.push_prev_dep);
+        push_next =  static_cast<int>(c.mem.push_next_dep);
+        xsize =  static_cast<int>(c.mem.x_size);
+        ysize =  static_cast<int>(c.mem.y_size);
+        uop_begin = static_cast<int>(c.alu.uop_bgn);
+        uop_end = static_cast<int>(c.alu.uop_end);
+        lp_1 = static_cast<int>(c.alu.iter_out);
+        lp_0 = static_cast<int>(c.alu.iter_in);
+        use_alu_imm = static_cast<int>(c.alu.use_imm);
+
+      } else if (c.mem.opcode == VTA_OPCODE_FINISH) {
+        strcpy(opcode, "load");
+        strcpy(subopcode, "sync");
+        strcpy(tstype, "finish");
+      }
+
+      fprintf(fptr,"insn, %s, %s, %s, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n", \
+                  opcode, subopcode, tstype, xsize, ysize, uop_begin, uop_end, lp_1, lp_0, use_alu_imm, pop_prev, pop_next, push_prev, push_next);
+
+      //  printf("  _.append(Token(dict({\"opcode\": \"%s\" , \"subopcode\": \"%s\", \"tstype\": \"%s\", \"xsize\": %d, \"ysize\":%d, \
+      //             \"uop_begin\":%d, \"uop_end\":%d, \"lp_1\":%d, \"lp_0\":%d,\
+      //             \"use_alu_imm\": %d,\
+      //             \"pop_prev\":%d, \"pop_next\":%d, \"push_prev\":%d, \"push_next\":%d})))\n", \
+      //             opcode, subopcode, tstype, xsize, ysize, uop_begin, uop_end, lp_1, lp_0, use_alu_imm, pop_prev, pop_next, push_prev, push_next);
+    }
+    fclose(fptr);
+
+    dumpto(std::to_string(insn_count));
+    // printf("  return _\n");
+  }
+  // Dump instructions in the queue
+  void NormalDumpInsn() {
     // Keep tabs on dependence queues
     int l2g_queue = 0;
     int g2l_queue = 0;
@@ -1129,6 +1308,7 @@ class CommandQueue {
     if (debug_flag_ & VTA_DEBUG_DUMP_INSN) {
       insn_queue_.DumpInsn();
     }
+    insn_queue_.DumpInsn(); // sim_petri();
     // Make sure that the last instruction is a finish instruction
     CHECK(reinterpret_cast<VTAMemInsn*>(insn_queue_.data())[insn_queue_.count() - 1].opcode ==
           VTA_OPCODE_FINISH);

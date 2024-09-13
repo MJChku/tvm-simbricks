@@ -143,7 +143,7 @@ assert MODEL_NAME in pack_dict
 # ---------------------------
 # When target is 'pynq' or other FPGA backend, reconfigure FPGA and runtime.
 # Otherwise, if target is 'sim', execute locally.
-
+print("whats your target ? ", env.TARGET)
 if env.TARGET not in ["sim", "tsim"]:
     # Get remote from tracker node if environment variable is set.
     # To set up the tracker, you'll need to follow the "Auto-tuning
@@ -172,6 +172,7 @@ if env.TARGET not in ["sim", "tsim"]:
 
 # In simulation mode, host the RPC server locally.
 else:
+    # even with tsim, it's using local session
     remote = rpc.LocalSession()
 
 # Get execution context from remote
@@ -239,7 +240,7 @@ with autotvm.tophub.context(target):
 
     # Measure Relay build time
     build_time = time.time() - build_start
-    print(MODEL_NAME + " inference graph built in {0:.2f}s!".format(build_time))
+    #print(MODEL_NAME + " inference graph built in {0:.2f}s!".format(build_time))
 
     # Send the inference library over to the remote RPC server
     temp = utils.tempdir()
@@ -262,8 +263,8 @@ img_path = download_testdata(img_url, test_image, "data")
 data = darknet.load_image(img_path, neth, netw).transpose(1, 2, 0)
 
 # Prepare test image for inference
-plt.imshow(data)
-plt.show()
+#plt.imshow(data)
+#plt.show()
 data = data.transpose((2, 0, 1))
 data = data[np.newaxis, :]
 data = np.repeat(data, env.BATCH, axis=0)
@@ -273,11 +274,11 @@ m.set_input("data", data)
 
 # Perform inference and gather execution statistics
 # More on: :py:method:`tvm.runtime.Module.time_evaluator`
-num = 4  # number of times we run module for a single measurement
-rep = 3  # number of measurements (we derive std dev from this)
+num = 1  # number of times we run module for a single measurement
+rep = 1  # number of measurements (we derive std dev from this)
 timer = m.module.time_evaluator("run", ctx, number=num, repeat=rep)
 
-if env.TARGET in ["sim", "tsim"]:
+if False and env.TARGET in ["sim", "tsim"]:
     simulator.clear_stats()
     timer()
     sim_stats = simulator.stats()
@@ -311,6 +312,7 @@ for i in range(2):
     tvm_out.append(layer_out)
     thresh = 0.560
 
+print(tvm_out)
 # Show detection results
 img = darknet.load_image_color(img_path)
 _, im_h, im_w = img.shape
@@ -319,4 +321,4 @@ last_layer = net.layers[net.n - 1]
 yolo_detection.do_nms_sort(dets, last_layer.classes, nms_thresh)
 yolo_detection.draw_detections(font_path, img, dets, thresh, names, last_layer.classes)
 plt.imshow(img.transpose(1, 2, 0))
-plt.show()
+plt.savefig("mypic")

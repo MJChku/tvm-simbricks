@@ -226,7 +226,7 @@ res = te.compute(output_shape, lambda *i: res_min(*i).astype(env.inp_dtype), nam
 # Create TVM schedule
 s = te.create_schedule(res.op)
 # Let's look at the default TVM schedule
-print(tvm.lower(s, [data, kernel, res], simple_mode=True))
+#print(tvm.lower(s, [data, kernel, res], simple_mode=True))
 
 ######################################################################
 # Blocking the Computation
@@ -305,7 +305,7 @@ s[res].reorder(tx, b_out)
 s[res].bind(tx, te.thread_axis("cthread"))
 
 # Let's look at the current TVM schedule after blocking and virtual threading
-print(tvm.lower(s, [data, kernel, res], simple_mode=True))
+#print(tvm.lower(s, [data, kernel, res], simple_mode=True))
 
 ######################################################################
 # Lowering Copies to DMA Transfers
@@ -355,7 +355,8 @@ s[res_max].pragma(s[res_max].op.axis[0], env.alu)
 # Let's look at the final lowered TVM schedule after lowering memory
 # loads/stores down to DMA copy intrinsics, and the computation down to
 # VTA compute intrinsics.
-print(vta.lower(s, [data, kernel, res], simple_mode=True))
+
+#print(vta.lower(s, [data, kernel, res], simple_mode=True))
 
 ######################################################################
 # TVM Compilation and Verification

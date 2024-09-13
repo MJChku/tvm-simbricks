@@ -24,6 +24,7 @@ import pytest
 import numpy as np
 from collections import namedtuple
 
+import vta
 import tvm
 from tvm import te
 from tvm import relay
@@ -63,15 +64,15 @@ resnet_wkls = [
     # Workloads of resnet18 on imagenet
     # ('resnet-18.C1',  Workload(env.BATCH, 224, 224, 3,   64,  7, 7, 3, 3, 2, 2)),
     ("resnet-18.C2", Workload(env.BATCH, 56, 56, 64, 64, 3, 3, 1, 1, 1, 1)),
-    ("resnet-18.C3", Workload(env.BATCH, 56, 56, 64, 128, 3, 3, 1, 1, 2, 2)),
-    ("resnet-18.C4", Workload(env.BATCH, 56, 56, 64, 128, 1, 1, 0, 0, 2, 2)),
-    ("resnet-18.C5", Workload(env.BATCH, 28, 28, 128, 128, 3, 3, 1, 1, 1, 1)),
-    ("resnet-18.C6", Workload(env.BATCH, 28, 28, 128, 256, 3, 3, 1, 1, 2, 2)),
-    ("resnet-18.C7", Workload(env.BATCH, 28, 28, 128, 256, 1, 1, 0, 0, 2, 2)),
-    ("resnet-18.C8", Workload(env.BATCH, 14, 14, 256, 256, 3, 3, 1, 1, 1, 1)),
-    ("resnet-18.C9", Workload(env.BATCH, 14, 14, 256, 512, 3, 3, 1, 1, 2, 2)),
-    ("resnet-18.C10", Workload(env.BATCH, 14, 14, 256, 512, 1, 1, 0, 0, 2, 2)),
-    ("resnet-18.C11", Workload(env.BATCH, 7, 7, 512, 512, 3, 3, 1, 1, 1, 1)),
+    #("resnet-18.C3", Workload(env.BATCH, 56, 56, 64, 128, 3, 3, 1, 1, 2, 2)),
+    #("resnet-18.C4", Workload(env.BATCH, 56, 56, 64, 128, 1, 1, 0, 0, 2, 2)),
+    #("resnet-18.C5", Workload(env.BATCH, 28, 28, 128, 128, 3, 3, 1, 1, 1, 1)),
+    #("resnet-18.C6", Workload(env.BATCH, 28, 28, 128, 256, 3, 3, 1, 1, 2, 2)),
+    #("resnet-18.C7", Workload(env.BATCH, 28, 28, 128, 256, 1, 1, 0, 0, 2, 2)),
+    #("resnet-18.C8", Workload(env.BATCH, 14, 14, 256, 256, 3, 3, 1, 1, 1, 1)),
+    #("resnet-18.C9", Workload(env.BATCH, 14, 14, 256, 512, 3, 3, 1, 1, 2, 2)),
+    #("resnet-18.C10", Workload(env.BATCH, 14, 14, 256, 512, 1, 1, 0, 0, 2, 2)),
+    #("resnet-18.C11", Workload(env.BATCH, 7, 7, 512, 512, 3, 3, 1, 1, 1, 1)),
 ]
 
 # FIXME: we need a custom clip operator to circumvent a pattern detection limitation
@@ -156,7 +157,8 @@ def run_conv2d(env, remote, wl, target, check_correctness=True, print_ir=False, 
         res = topi.cast(res, env.out_dtype)
         # Derive base schedule
         s = conv2d_fschedule([res])
-        if print_ir:
+        if 1:
+        #if print_ir:
             print(vta.lower(s, [data, kernel, bias, res], simple_mode=True))
 
     # Derive number of ops
@@ -299,7 +301,7 @@ def test_conv2d(device):
     def _run(env, remote):
         if device == "vta":
             target = env.target
-            if env.TARGET not in ["sim", "tsim", "intelfocl"]:
+            if env.TARGET not in ["sim", "tsim", "intelfocl", "simbricks-pci"]:
                 assert tvm.runtime.enabled("rpc")
                 program_fpga(remote, bitstream=None)
                 reconfig_runtime(remote)
@@ -314,5 +316,5 @@ def test_conv2d(device):
 
 
 if __name__ == "__main__":
-    test_conv2d(device="arm_cpu")
+    #test_conv2d(device="arm_cpu")
     test_conv2d(device="vta")

@@ -164,7 +164,7 @@ set(USE_MICRO_STANDALONE_RUNTIME OFF)
 # - OFF: disable llvm, note this will disable CPU codegen
 #        which is needed for most cases
 # - /path/to/llvm-config: enable specific LLVM when multiple llvm-dev is available.
-set(USE_LLVM OFF)
+set(USE_LLVM ON)
 
 # Whether use MLIR to help analyze, requires USE_LLVM is enabled
 # Possible values: ON/OFF
@@ -341,8 +341,10 @@ set(USE_VTA_FSIM OFF)
 # Whether to build cycle-accurate VTA simulator driver
 set(USE_VTA_TSIM OFF)
 
+set(VTA_TARGET "simbricks-pci")
+
 # Whether to build VTA FPGA driver (device side only)
-set(USE_VTA_FPGA OFF)
+set(USE_VTA_FPGA ON)
 
 # Whether use Thrust
 # Possible values:
